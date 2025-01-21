@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .container {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0 auto;
+        width: 800px;
+        height: 500px;
+      }
+      #legend {
+        display: flex;
+        justify-content: start;
+        width: 100%;
+      }
+      .form {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .form span {
+        display: inline-block;
+        width: 50px;
+        text-align: center;
+      }
+
+      #dir {
+        margin-top: 30px;
+      }
+    </style>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        const data = {
+          labels: ["Red", "Blue", "Yellow", "Green", "Purple", "Orange"],
+          datasets: [
+            {
+              label: "sample1", // 제목
+              data: [12000, 19000, 8000, 16000, 12000, 15000], // 데이터
+              maxBarThickness: 10, // bar의 width
+              backgroundColor: "red", // 배경 색
+              borderColor: "black", // 보더 색
+              borderWidth: 2, // 보더 두께
+            },
+            {
+              label: "sample2",
+              data: [7000, 1000, 30000, 40000, 20000, 30000],
+              maxBarThickness: 30,
+              backgroundColor: "blue",
+              borderColor: "black",
+              borderWidth: 2,
+            },
+          ],
+        };
+
+        const ctx = document.getElementById("chart");
+        const ctx2 = document.getElementById("chart2");
+
+        const getOrCreateLegendList = (chart, id) => {
+          const legendContainer = document.getElementById(id);
+          let listContainer = legendContainer.querySelector("ul");
+
+          if (!listContainer) {
+            listContainer = document.createElement("ul");
+            listContainer.style.display = "flex";
+            listContainer.style.flexDirection = "row";
+            listContainer.style.margin = 0;
+            listContainer.style.padding = 0;
+
+            legendContainer.appendChild(listContainer);
+          }
+
+          return listContainer;
+        };
+
+        // 범례 커스텀
+        const htmlLegendPlugin = {
+          id: "htmlLegend",
+          afterUpdate(chart, args, options) {
+            const ul = getOrCreateLegendList(chart, options.containerID);
+
+            // Remove old legend items
+            while (ul.firstChild) {
+              ul.firstChild.remove();
+            }
+
+            // Reuse the built-in legendItems generator
+            const items =
+              chart.options.plugins.legend.labels.generateLabels(chart);
+
+            items.forEach((item) => {
+              const li = document.createElement("li");
+              li.style.alignItems = "center";
+              li.style.cursor = "pointer";
+              li.style.display = "flex";
+              li.style.flexDirection = "row";
+              li.style.marginLeft = "10px";
+
+              li.onclick = () => {
+                const { type } = chart.config;
+                if (type === "pie" || type === "doughnut") {
+                  // Pie and doughnut charts only have a single dataset and visibility is per item
+                  chart.toggleDataVisibility(item.index);
+                } else {
+                  chart.setDatasetVisibility(
+                    item.datasetIndex,
+                    !chart.isDatasetVisible(item.datasetIndex)
+                  );
+                }
+                chart.update();
+              };
+
+              // Color box
+              const boxSpan = document.createElement("span");
+              boxSpan.style.background = item.fillStyle;
+              boxSpan.style.borderColor = item.strokeStyle;
+              boxSpan.style.borderWidth = item.lineWidth + "px";
+              boxSpan.style.display = "inline-block";
+              boxSpan.style.height = "5px";
+              boxSpan.style.marginRight = "10px";
+              boxSpan.style.width = "20px";
+
+              // Text
+              const textContainer = document.createElement("p");
+              textContainer.style.color = item.fontColor;
+              textContainer.style.margin = 0;
+              textContainer.style.padding = 0;
+              textContainer.style.textDecoration = item.hidden
+                ? "line-through"
+                : "";
+
+              const text = document.createTextNode(item.text);
+              textContainer.appendChild(text);
+
+              li.appendChild(boxSpan);
+              li.appendChild(textContainer);
+              ul.appendChild(li);
+            });
+          },
+        };
+
+        let myChart = new Chart(ctx, {
+          type: "bar",
+          data,
+          options: {
+            indexAxis: "x", // x, y
+            scales: {
+              y: {
+                ticks: {
+                  callback: function (value, index, ticks) {
+                    return (
+                      "$" +
+                      Chart.Ticks.formatters.numeric.apply(this, [
+                        value,
+                        index,
+                        ticks,
+                      ])
+                    );
+                  },
+                },
+              },
+            },
+            plugins: {
+              htmlLegend: {
+                containerID: "legend",
+              },
+              legend: {
+                display: false,
+              },
+              subtitle: {
+                display: true,
+                text: "부제",
+              },
+            },
+          },
+          plugins: [htmlLegendPlugin],
+        });
+
+        let myChart2 = new Chart(ctx2, {
+          type: "bar",
+          data,
+          options: {
+            indexAxis: "x", // x, y
+            scales: {
+              y: {
+                ticks: {
+                  callback: function (value, index, ticks) {
+                    return (
+                      "$" +
+                      Chart.Ticks.formatters.numeric.apply(this, [
+                        value,
+                        index,
+                        ticks,
+                      ])
+                    );
+                  },
+                },
+              },
+            },
+            plugins: {
+              htmlLegend: {
+                containerID: "legend",
+              },
+              legend: {
+                display: false,
+              },
+              subtitle: {
+                display: true,
+                text: "부제",
+              },
+            },
+          },
+          plugins: [htmlLegendPlugin],
+        });
+
+        document.querySelector("#dir").addEventListener("change", (e) => {
+          myChart.destroy();
+          myChart = new Chart(ctx, {
+            type: "bar",
+            data,
+            options: {
+              indexAxis: e.target.value, // x, y
+              plugins: {
+                htmlLegend: {
+                  containerID: "legend",
+                },
+                legend: {
+                  display: false,
+                },
+              },
+            },
+            plugins: [htmlLegendPlugin],
+          });
+        });
+
+        document.querySelector(".save").addEventListener("click", (e) => {
+          console.log(myChart.toBase64Image("image/png", 1));
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div id="legend"></div>
+      <canvas id="chart"></canvas>
+      <select name="dir" id="dir">
+        <option value="x">x</option>
+        <option value="y">y</option>
+      </select>
+      <button class="save" type="button">저장</button>
+    </div>
+    <div class="container">
+      <div id="legend"></div>
+      <canvas id="chart2"></canvas>
+    </div>
+  </body>
+</html>

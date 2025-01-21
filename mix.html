@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <style>
+      .container {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0 auto;
+        width: 800px;
+        height: 400px;
+      }
+      #legend {
+        position: absolute;
+        left: -100px;
+        top: 0;
+      }
+      .form {
+        margin-top: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .form span {
+        display: inline-block;
+        width: 50px;
+        text-align: center;
+      }
+    </style>
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+      window.addEventListener("DOMContentLoaded", () => {
+        const ctx = document.getElementById("chart");
+
+        const getOrCreateLegendList = (chart, id) => {
+          const legendContainer = document.getElementById(id);
+          let listContainer = legendContainer.querySelector("ul");
+
+          if (!listContainer) {
+            listContainer = document.createElement("ul");
+            listContainer.style.display = "flex";
+            listContainer.style.flexDirection = "column";
+            listContainer.style.margin = 0;
+            listContainer.style.padding = 0;
+
+            legendContainer.appendChild(listContainer);
+          }
+
+          return listContainer;
+        };
+
+        const htmlLegendPlugin = { // 범례 커스텀
+          id: "htmlLegend",
+          afterUpdate(chart, args, options) {
+            const ul = getOrCreateLegendList(chart, options.containerID);
+
+            // Remove old legend items
+            while (ul.firstChild) {
+              ul.firstChild.remove();
+            }
+
+            // Reuse the built-in legendItems generator
+            const items =
+              chart.options.plugins.legend.labels.generateLabels(chart);
+
+            items.forEach((item) => {
+              const li = document.createElement("li");
+              li.style.alignItems = "center";
+              li.style.cursor = "pointer";
+              li.style.display = "flex";
+              li.style.flexDirection = "row";
+              li.style.marginLeft = "10px";
+
+              li.onclick = () => {
+                const { type } = chart.config;
+                if (type === "pie" || type === "doughnut") {
+                  // Pie and doughnut charts only have a single dataset and visibility is per item
+                  chart.toggleDataVisibility(item.index);
+                } else {
+                  chart.setDatasetVisibility(
+                    item.datasetIndex,
+                    !chart.isDatasetVisible(item.datasetIndex)
+                  );
+                }
+                chart.update();
+              };
+
+              // Color box
+              const boxSpan = document.createElement("span");
+              boxSpan.style.background = item.fillStyle;
+              boxSpan.style.borderColor = item.strokeStyle;
+              boxSpan.style.borderWidth = item.lineWidth + "px";
+              boxSpan.style.display = "inline-block";
+              boxSpan.style.height = "5px";
+              boxSpan.style.marginRight = "10px";
+              boxSpan.style.width = "20px";
+
+              // Text
+              const textContainer = document.createElement("p");
+              textContainer.style.color = item.fontColor;
+              textContainer.style.margin = 0;
+              textContainer.style.padding = 0;
+              textContainer.style.textDecoration = item.hidden
+                ? "line-through"
+                : "";
+
+              const text = document.createTextNode(item.text);
+              textContainer.appendChild(text);
+
+              li.appendChild(boxSpan);
+              li.appendChild(textContainer);
+              ul.appendChild(li);
+            });
+          },
+        };
+
+        let myChart = new Chart(ctx, {
+          data: {
+            labels: ["블루가", "삼성", "카카오", "배민", "당근", "토스"],
+            datasets: [
+              {
+                type: "line", // doughnut, pie : 내경만 다름
+                label: "line", // 제목
+                data: [10, 3, 2, 1, 5, 7], // 데이터
+                backgroundColor: [
+                  "skyblue",
+                  "navy",
+                  "rgb(255,255,51)",
+                  "rgb(33 189 169)",
+                  "orange",
+                  'blue'
+                ], // 배경 색
+                borderColor: "red", // 보더 색
+                borderWidth: 1, // 보더 두께
+              }, {
+                type: "pie", // doughnut, pie : 내경만 다름
+                label: "pie", // 제목
+                data: [10, 3, 2, 1, 5, 7], // 데이터
+                backgroundColor: [
+                  "rgb(135,206,235,0.2)",
+                  "rgb(0,0,128,0.2)",
+                  "rgb(255,255,51,0.2)",
+                  "rgb(33,189,169,0.2)",
+                  "rgb(255,165,0.2)",
+                  'rgb(0,0,255,0.2)'
+                ], // 배경 색
+                borderWidth: 0, // 보더 두께
+                cutout: 0,
+              }, {
+                type: "bar", // doughnut, pie : 내경만 다름
+                label: "bar", // 제목
+                data: [10, 3, 2, 1, 5, 7], // 데이터
+                backgroundColor: [
+                  "skyblue",
+                  "navy",
+                  "rgb(255,255,51)",
+                  "rgb(33 189 169)",
+                  "orange",
+                  'blue'
+                ], // 배경 색
+                borderColor: "red", // 보더 색
+                borderWidth: 1, // 보더 두께
+              }
+            ]
+          },
+          options: {
+            indexAxis: "x", // x, y
+            plugins: {
+              title: {
+                display: true,
+                text: "MIX"
+              },
+              htmlLegend: {
+                containerID: "legend",
+              },
+              legend: {
+                display: false,
+              },
+            },
+          },
+          plugins: [htmlLegendPlugin],
+        });
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div id="legend"></div>
+      <canvas id="chart"></canvas>
+  </body>
+</html>
